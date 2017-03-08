@@ -1,4 +1,4 @@
-var Selectize = function($input, settings) {
+export Selectize = function($input, settings) {
 	var key, i, n, dir, input, self = this;
 	input = $input[0];
 	input.selectize = self;
