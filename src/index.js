@@ -1,1 +1,1 @@
-export default selectize from './selectize';
+export {default} from './selectize';

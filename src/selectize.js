@@ -1,5 +1,11 @@
-export Selectize = function($input, settings) {
-	var key, i, n, dir, input, self = this;
+import './defaults'
+import './selectize.jquery.js'
+import consts from './constants'
+import {autoGrow, debounce} from './utils.js'
+import Sifter from 'es-sifter'
+
+export default function Selectize($input, settings) {
+	var i, n, dir, input, self = this;
 	input = $input[0];
 	input.selectize = self;
 
@@ -14,7 +20,7 @@ export Selectize = function($input, settings) {
 		settings         : settings,
 		$input           : $input,
 		tabIndex         : $input.attr('tabindex') || '',
-		tagType          : input.tagName.toLowerCase() === 'select' ? TAG_SELECT : TAG_INPUT,
+		tagType          : input.tagName.toLowerCase() === 'select' ? consts.TAG_SELECT : consts.TAG_INPUT,
 		rtl              : /rtl/i.test(dir),
 
 		eventNS          : '.selectize' + (++Selectize.count),
@@ -82,19 +88,21 @@ export Selectize = function($input, settings) {
 	self.setup();
 };
 
+export default Selectize;
+
 // mixins
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 MicroEvent.mixin(Selectize);
 
-if(typeof MicroPlugin !== "undefined"){
+if (typeof MicroPlugin !== 'undefined') {
 	MicroPlugin.mixin(Selectize);
-}else{
-	logError("Dependency MicroPlugin is missing",
+} else {
+	logError('Dependency MicroPlugin is missing',
 		{explanation:
-			"Make sure you either: (1) are using the \"standalone\" "+
-			"version of Selectize, or (2) require MicroPlugin before you "+
-			"load Selectize."}
+			'Make sure you either: (1) are using the \'standalone\' '+
+			'version of Selectize, or (2) require MicroPlugin before you '+
+			'load Selectize.'}
 	);
 }
 
@@ -117,15 +125,15 @@ $.extend(Selectize.prototype, {
 
 		var $wrapper;
 		var $control;
-		var $control_input;
+		var $controlInput;
 		var $dropdown;
-		var $dropdown_content;
-		var $dropdown_parent;
+		var $dropdownContent;
+		var $dropdownParent;
 		var inputMode;
-		var timeout_blur;
-		var timeout_focus;
+		var timeoutBlur;
+		var timeoutFocus;
 		var classes;
-		var classes_plugins;
+		var classesPlugins;
 		var inputId;
 
 		inputMode         = self.settings.mode;
@@ -133,13 +141,13 @@ $.extend(Selectize.prototype, {
 
 		$wrapper          = $('<div>').addClass(settings.wrapperClass).addClass(classes).addClass(inputMode);
 		$control          = $('<div>').addClass(settings.inputClass).addClass('items').appendTo($wrapper);
-		$control_input    = $('<input type="text" autocomplete="off" />').appendTo($control).attr('tabindex', $input.is(':disabled') ? '-1' : self.tabIndex);
-		$dropdown_parent  = $(settings.dropdownParent || $wrapper);
-		$dropdown         = $('<div>').addClass(settings.dropdownClass).addClass(inputMode).hide().appendTo($dropdown_parent);
-		$dropdown_content = $('<div>').addClass(settings.dropdownContentClass).appendTo($dropdown);
+		$controlInput    = $('<input type="text" autocomplete="off" />').appendTo($control).attr('tabindex', $input.is(':disabled') ? '-1' : self.tabIndex);
+		$dropdownParent  = $(settings.dropdownParent || $wrapper);
+		$dropdown         = $('<div>').addClass(settings.dropdownClass).addClass(inputMode).hide().appendTo($dropdownParent);
+		$dropdownContent = $('<div>').addClass(settings.dropdownContentClass).appendTo($dropdown);
 
 		if(inputId = $input.attr('id')) {
-			$control_input.attr('id', inputId + '-selectized');
+			$controlInput.attr('id', inputId + '-selectized');
 			$("label[for='"+inputId+"']").attr('for', inputId + '-selectized');
 		}
 
@@ -152,17 +160,17 @@ $.extend(Selectize.prototype, {
 		});
 
 		if (self.plugins.names.length) {
-			classes_plugins = 'plugin-' + self.plugins.names.join(' plugin-');
-			$wrapper.addClass(classes_plugins);
-			$dropdown.addClass(classes_plugins);
+			classesPlugins = 'plugin-' + self.plugins.names.join(' plugin-');
+			$wrapper.addClass(classesPlugins);
+			$dropdown.addClass(classesPlugins);
 		}
 
-		if ((settings.maxItems === null || settings.maxItems > 1) && self.tagType === TAG_SELECT) {
+		if ((settings.maxItems === null || settings.maxItems > 1) && self.tagType === consts.TAG_SELECT) {
 			$input.attr('multiple', 'multiple');
 		}
 
 		if (self.settings.placeholder) {
-			$control_input.attr('placeholder', settings.placeholder);
+			$controlInput.attr('placeholder', settings.placeholder);
 		}
 
 		// if splitOn was not passed in, construct it from the delimiter to allow pasting universally
@@ -172,32 +180,30 @@ $.extend(Selectize.prototype, {
 		}
 
 		if ($input.attr('autocorrect')) {
-			$control_input.attr('autocorrect', $input.attr('autocorrect'));
+			$controlInput.attr('autocorrect', $input.attr('autocorrect'));
 		}
 
 		if ($input.attr('autocapitalize')) {
-			$control_input.attr('autocapitalize', $input.attr('autocapitalize'));
+			$controlInput.attr('autocapitalize', $input.attr('autocapitalize'));
 		}
-		$control_input[0].type = $input[0].type;
 
 		self.$wrapper          = $wrapper;
 		self.$control          = $control;
-		self.$control_input    = $control_input;
+		self.$controlInput    = $controlInput;
 		self.$dropdown         = $dropdown;
-		self.$dropdown_content = $dropdown_content;
+		self.$dropdownContent = $dropdownContent;
 
-		$dropdown.on('mouseenter mousedown click', '[data-disabled]>[data-selectable]', function(e) { e.stopImmediatePropagation(); });
 		$dropdown.on('mouseenter', '[data-selectable]', function() { return self.onOptionHover.apply(self, arguments); });
 		$dropdown.on('mousedown click', '[data-selectable]', function() { return self.onOptionSelect.apply(self, arguments); });
 		watchChildEvent($control, 'mousedown', '*:not(input)', function() { return self.onItemSelect.apply(self, arguments); });
-		autoGrow($control_input);
+		autoGrow($controlInput);
 
 		$control.on({
 			mousedown : function() { return self.onMouseDown.apply(self, arguments); },
 			click     : function() { return self.onClick.apply(self, arguments); }
 		});
 
-		$control_input.on({
+		$controlInput.on({
 			mousedown : function(e) { e.stopPropagation(); },
 			keydown   : function() { return self.onKeyDown.apply(self, arguments); },
 			keyup     : function() { return self.onKeyUp.apply(self, arguments); },
@@ -209,15 +215,15 @@ $.extend(Selectize.prototype, {
 		});
 
 		$document.on('keydown' + eventNS, function(e) {
-			self.isCmdDown = e[IS_MAC ? 'metaKey' : 'ctrlKey'];
-			self.isCtrlDown = e[IS_MAC ? 'altKey' : 'ctrlKey'];
+			self.isCmdDown = e[consts.IS_MAC ? 'metaKey' : 'ctrlKey'];
+			self.isCtrlDown = e[consts.IS_MAC ? 'altKey' : 'ctrlKey'];
 			self.isShiftDown = e.shiftKey;
 		});
 
 		$document.on('keyup' + eventNS, function(e) {
-			if (e.keyCode === KEY_CTRL) self.isCtrlDown = false;
-			if (e.keyCode === KEY_SHIFT) self.isShiftDown = false;
-			if (e.keyCode === KEY_CMD) self.isCmdDown = false;
+			if (e.keyCode === consts.KEY_CTRL) self.isCtrlDown = false;
+			if (e.keyCode === consts.KEY_SHIFT) self.isShiftDown = false;
+			if (e.keyCode === consts.KEY_CMD) self.isCmdDown = false;
 		});
 
 		$document.on('mousedown' + eventNS, function(e) {
@@ -257,7 +263,7 @@ $.extend(Selectize.prototype, {
 		}
 
 		// feature detect for the validation API
-		if (SUPPORTS_VALIDITY_API) {
+		if (consts.SUPPORTS_VALIDITY_API) {
 			$input.on('invalid' + eventNS, function(e) {
 				e.preventDefault();
 				self.isInvalid = true;
@@ -293,23 +299,23 @@ $.extend(Selectize.prototype, {
 	 */
 	setupTemplates: function() {
 		var self = this;
-		var field_label = self.settings.labelField;
-		var field_optgroup = self.settings.optgroupLabelField;
+		var fieldLabel = self.settings.labelField;
+		var fieldOptgroup = self.settings.optgroupLabelField;
 
 		var templates = {
 			'optgroup': function(data) {
 				return '<div class="optgroup">' + data.html + '</div>';
 			},
-			'optgroup_header': function(data, escape) {
-				return '<div class="optgroup-header">' + escape(data[field_optgroup]) + '</div>';
+			'optgroupHeader': function(data, escape) {
+				return '<div class="optgroup-header">' + escape(data[fieldOptgroup]) + '</div>';
 			},
 			'option': function(data, escape) {
-				return '<div class="option">' + escape(data[field_label]) + '</div>';
+				return '<div class="option">' + escape(data[fieldLabel]) + '</div>';
 			},
 			'item': function(data, escape) {
-				return '<div class="item">' + escape(data[field_label]) + '</div>';
+				return '<div class="item">' + escape(data[fieldLabel]) + '</div>';
 			},
-			'option_create': function(data, escape) {
+			'optionCreate': function(data, escape) {
 				return '<div class="create">Add <strong>' + escape(data.input) + '</strong>&hellip;</div>';
 			}
 		};
@@ -325,17 +331,17 @@ $.extend(Selectize.prototype, {
 		var key, fn, callbacks = {
 			'initialize'      : 'onInitialize',
 			'change'          : 'onChange',
-			'item_add'        : 'onItemAdd',
-			'item_remove'     : 'onItemRemove',
+			'itemAdd'        : 'onItemAdd',
+			'itemRemove'     : 'onItemRemove',
 			'clear'           : 'onClear',
-			'option_add'      : 'onOptionAdd',
-			'option_remove'   : 'onOptionRemove',
-			'option_clear'    : 'onOptionClear',
-			'optgroup_add'    : 'onOptionGroupAdd',
-			'optgroup_remove' : 'onOptionGroupRemove',
-			'optgroup_clear'  : 'onOptionGroupClear',
-			'dropdown_open'   : 'onDropdownOpen',
-			'dropdown_close'  : 'onDropdownClose',
+			'optionAdd'      : 'onOptionAdd',
+			'optionRemove'   : 'onOptionRemove',
+			'optionClear'    : 'onOptionClear',
+			'optgroupAdd'    : 'onOptionGroupAdd',
+			'optgroupRemove' : 'onOptionGroupRemove',
+			'optgroupClear'  : 'onOptionGroupClear',
+			'dropdownOpen'   : 'onDropdownOpen',
+			'dropdownClose'  : 'onDropdownClose',
 			'type'            : 'onType',
 			'load'            : 'onLoad',
 			'focus'           : 'onFocus',
@@ -384,7 +390,7 @@ $.extend(Selectize.prototype, {
 			// retain focus by preventing native handling. if the
 			// event target is the input it should not be modified.
 			// otherwise, text selection within the input won't work.
-			if (e.target !== self.$control_input[0]) {
+			if (e.target !== self.$controlInput[0]) {
 				if (self.settings.mode === 'single') {
 					// toggle dropdown
 					self.isOpen ? self.close() : self.open();
@@ -432,7 +438,7 @@ $.extend(Selectize.prototype, {
 
 			// Wait for pasted text to be recognized in value
 			setTimeout(function() {
-				var pastedText = self.$control_input.val();
+				var pastedText = self.$controlInput.val();
 				if(!pastedText.match(self.settings.splitOn)){ return }
 
 				var splitInput = $.trim(pastedText).split(self.settings.splitOn);
@@ -466,33 +472,33 @@ $.extend(Selectize.prototype, {
 	 * @returns {boolean}
 	 */
 	onKeyDown: function(e) {
-		var isInput = e.target === this.$control_input[0];
+		var isInput = e.target === this.$controlInput[0];
 		var self = this;
 
 		if (self.isLocked) {
-			if (e.keyCode !== KEY_TAB) {
+			if (e.keyCode !== consts.KEY_TAB) {
 				e.preventDefault();
 			}
 			return;
 		}
 
 		switch (e.keyCode) {
-			case KEY_A:
+			case consts.consts.KEY_A:
 				if (self.isCmdDown) {
 					self.selectAll();
 					return;
 				}
 				break;
-			case KEY_ESC:
+			case consts.KEY_ESC:
 				if (self.isOpen) {
 					e.preventDefault();
 					e.stopPropagation();
 					self.close();
 				}
 				return;
-			case KEY_N:
+			case consts.KEY_N:
 				if (!e.ctrlKey || e.altKey) break;
-			case KEY_DOWN:
+			case consts.KEY_DOWN:
 				if (!self.isOpen && self.hasOptions) {
 					self.open();
 				} else if (self.$activeOption) {
@@ -502,9 +508,9 @@ $.extend(Selectize.prototype, {
 				}
 				e.preventDefault();
 				return;
-			case KEY_P:
+			case consts.KEY_P:
 				if (!e.ctrlKey || e.altKey) break;
-			case KEY_UP:
+			case consts.KEY_UP:
 				if (self.$activeOption) {
 					self.ignoreHover = true;
 					var $prev = self.getAdjacentOption(self.$activeOption, -1);
@@ -512,19 +518,19 @@ $.extend(Selectize.prototype, {
 				}
 				e.preventDefault();
 				return;
-			case KEY_RETURN:
+			case consts.KEY_RETURN:
 				if (self.isOpen && self.$activeOption) {
 					self.onOptionSelect({currentTarget: self.$activeOption});
 					e.preventDefault();
 				}
 				return;
-			case KEY_LEFT:
+			case consts.KEY_LEFT:
 				self.advanceSelection(-1, e);
 				return;
-			case KEY_RIGHT:
+			case consts.KEY_RIGHT:
 				self.advanceSelection(1, e);
 				return;
-			case KEY_TAB:
+			case consts.KEY_TAB:
 				if (self.settings.selectOnTab && self.isOpen && self.$activeOption) {
 					self.onOptionSelect({currentTarget: self.$activeOption});
 
@@ -538,13 +544,13 @@ $.extend(Selectize.prototype, {
 					e.preventDefault();
 				}
 				return;
-			case KEY_BACKSPACE:
-			case KEY_DELETE:
+			case consts.KEY_BACKSPACE:
+			case consts.KEY_DELETE:
 				self.deleteSelection(e);
 				return;
 		}
 
-		if ((self.isFull() || self.isInputHidden) && !(IS_MAC ? e.metaKey : e.ctrlKey)) {
+		if ((self.isFull() || self.isInputHidden) && !(consts.IS_MAC ? e.metaKey : e.ctrlKey)) {
 			e.preventDefault();
 			return;
 		}
@@ -560,7 +566,7 @@ $.extend(Selectize.prototype, {
 		var self = this;
 
 		if (self.isLocked) return e && e.preventDefault();
-		var value = self.$control_input.val() || '';
+		var value = self.$controlInput.val() || '';
 		if (self.lastValue !== value) {
 			self.lastValue = value;
 			self.onSearchChange(value);
@@ -632,7 +638,7 @@ $.extend(Selectize.prototype, {
 
 		if (self.ignoreFocus) {
 			return;
-		} else if (!self.ignoreBlur && document.activeElement === self.$dropdown_content[0]) {
+		} else if (!self.ignoreBlur && document.activeElement === self.$dropdownContent[0]) {
 			// necessary to prevent IE closing the dropdown when the scrollbar is clicked
 			self.ignoreBlur = true;
 			self.onFocus(e);
@@ -759,7 +765,7 @@ $.extend(Selectize.prototype, {
 	 * @param {string} value
 	 */
 	setTextboxValue: function(value) {
-		var $input = this.$control_input;
+		var $input = this.$controlInput;
 		var changed = $input.val() !== value;
 		if (changed) {
 			$input.val(value).triggerHandler('update');
@@ -776,7 +782,7 @@ $.extend(Selectize.prototype, {
 	 * @returns {mixed}
 	 */
 	getValue: function() {
-		if (this.tagType === TAG_SELECT && this.$input.attr('multiple')) {
+		if (this.tagType === consts.TAG_SELECT && this.$input.attr('multiple')) {
 			return this.items;
 		} else {
 			return this.items.join(this.settings.delimiter);
@@ -791,7 +797,7 @@ $.extend(Selectize.prototype, {
 	setValue: function(value, silent) {
 		var events = silent ? [] : ['change'];
 
-		debounce_events(this, events, function() {
+		debounceEvents(this, events, function() {
 			this.clear(silent);
 			this.addItems(value, silent);
 		});
@@ -871,8 +877,8 @@ $.extend(Selectize.prototype, {
 	 * @param {boolean} animate
 	 */
 	setActiveOption: function($option, scroll, animate) {
-		var height_menu, height_item, y;
-		var scroll_top, scroll_bottom;
+		var heightMenu, heightItem, y;
+		var scrollTop, scrollBottom;
 		var self = this;
 
 		if (self.$activeOption) self.$activeOption.removeClass('active');
@@ -885,17 +891,17 @@ $.extend(Selectize.prototype, {
 
 		if (scroll || !isset(scroll)) {
 
-			height_menu   = self.$dropdown_content.height();
-			height_item   = self.$activeOption.outerHeight(true);
-			scroll        = self.$dropdown_content.scrollTop() || 0;
-			y             = self.$activeOption.offset().top - self.$dropdown_content.offset().top + scroll;
-			scroll_top    = y;
-			scroll_bottom = y - height_menu + height_item;
+			heightMenu   = self.$dropdownContent.height();
+			heightItem   = self.$activeOption.outerHeight(true);
+			scroll        = self.$dropdownContent.scrollTop() || 0;
+			y             = self.$activeOption.offset().top - self.$dropdownContent.offset().top + scroll;
+			scrollTop    = y;
+			scrollBottom = y - heightMenu + heightItem;
 
-			if (y + height_item > height_menu + scroll) {
-				self.$dropdown_content.stop().animate({scrollTop: scroll_bottom}, animate ? self.settings.scrollDuration : 0);
+			if (y + heightItem > heightMenu + scroll) {
+				self.$dropdownContent.stop().animate({scrollTop: scrollBottom}, animate ? self.settings.scrollDuration : 0);
 			} else if (y < scroll) {
-				self.$dropdown_content.stop().animate({scrollTop: scroll_top}, animate ? self.settings.scrollDuration : 0);
+				self.$dropdownContent.stop().animate({scrollTop: scrollTop}, animate ? self.settings.scrollDuration : 0);
 			}
 
 		}
@@ -924,7 +930,7 @@ $.extend(Selectize.prototype, {
 		var self = this;
 
 		self.setTextboxValue('');
-		self.$control_input.css({opacity: 0, position: 'absolute', left: self.rtl ? 10000 : -10000});
+		self.$controlInput.css({opacity: 0, position: 'absolute', left: self.rtl ? 10000 : -10000});
 		self.isInputHidden = true;
 	},
 
@@ -932,7 +938,7 @@ $.extend(Selectize.prototype, {
 	 * Restores input visibility.
 	 */
 	showInput: function() {
-		this.$control_input.css({opacity: 1, position: 'relative', left: 0});
+		this.$controlInput.css({opacity: 1, position: 'relative', left: 0});
 		this.isInputHidden = false;
 	},
 
@@ -944,7 +950,7 @@ $.extend(Selectize.prototype, {
 		if (self.isDisabled) return;
 
 		self.ignoreFocus = true;
-		self.$control_input[0].focus();
+		self.$controlInput[0].focus();
 		window.setTimeout(function() {
 			self.ignoreFocus = false;
 			self.onFocus();
@@ -957,7 +963,7 @@ $.extend(Selectize.prototype, {
 	 * @param {Element} dest
 	 */
 	blur: function(dest) {
-		this.$control_input[0].blur();
+		this.$controlInput[0].blur();
 		this.onBlur(null, dest);
 	},
 
@@ -991,8 +997,7 @@ $.extend(Selectize.prototype, {
 		return {
 			fields      : settings.searchField,
 			conjunction : settings.searchConjunction,
-			sort        : sort,
-			nesting     : settings.nesting
+			sort        : sort
 		};
 	},
 
@@ -1036,7 +1041,7 @@ $.extend(Selectize.prototype, {
 		// filter out selected items
 		if (settings.hideSelected) {
 			for (i = result.items.length - 1; i >= 0; i--) {
-				if (self.items.indexOf(hash_key(result.items[i].id)) !== -1) {
+				if (self.items.indexOf(hashKey(result.items[i].id)) !== -1) {
 					result.items.splice(i, 1);
 				}
 			}
@@ -1052,18 +1057,18 @@ $.extend(Selectize.prototype, {
 	 * @param {boolean} triggerDropdown
 	 */
 	refreshOptions: function(triggerDropdown) {
-		var i, j, k, n, groups, groups_order, option, option_html, optgroup, optgroups, html, html_children, has_create_option;
-		var $active, $active_before, $create;
+		var i, j, k, n, groups, groupsOrder, option, optionHtml, optgroup, optgroups, html, htmlChildren, hasCreateOption;
+		var $active, $activeBefore, $create;
 
 		if (typeof triggerDropdown === 'undefined') {
 			triggerDropdown = true;
 		}
 
 		var self              = this;
-		var query             = $.trim(self.$control_input.val());
+		var query             = $.trim(self.$controlInput.val());
 		var results           = self.search(query);
-		var $dropdown_content = self.$dropdown_content;
-		var active_before     = self.$activeOption && hash_key(self.$activeOption.attr('data-value'));
+		var $dropdownContent = self.$dropdownContent;
+		var activeBefore     = self.$activeOption && hashKey(self.$activeOption.attr('data-value'));
 
 		// build markup
 		n = results.items.length;
@@ -1073,11 +1078,11 @@ $.extend(Selectize.prototype, {
 
 		// render and group available options individually
 		groups = {};
-		groups_order = [];
+		groupsOrder = [];
 
 		for (i = 0; i < n; i++) {
 			option      = self.options[results.items[i].id];
-			option_html = self.render('option', option);
+			optionHtml = self.render('option', option);
 			optgroup    = option[self.settings.optgroupField] || '';
 			optgroups   = $.isArray(optgroup) ? optgroup : [optgroup];
 
@@ -1088,50 +1093,48 @@ $.extend(Selectize.prototype, {
 				}
 				if (!groups.hasOwnProperty(optgroup)) {
 					groups[optgroup] = document.createDocumentFragment();
-					groups_order.push(optgroup);
+					groupsOrder.push(optgroup);
 				}
-				groups[optgroup].appendChild(option_html);
+				groups[optgroup].appendChild(optionHtml);
 			}
 		}
 
 		// sort optgroups
 		if (this.settings.lockOptgroupOrder) {
-			groups_order.sort(function(a, b) {
-				var a_order = self.optgroups[a].$order || 0;
-				var b_order = self.optgroups[b].$order || 0;
-				return a_order - b_order;
+			groupsOrder.sort(function(a, b) {
+				var aOrder = self.optgroups[a].$order || 0;
+				var bOrder = self.optgroups[b].$order || 0;
+				return aOrder - bOrder;
 			});
 		}
 
 		// render optgroup headers & join groups
 		html = document.createDocumentFragment();
-		for (i = 0, n = groups_order.length; i < n; i++) {
-			optgroup = groups_order[i];
+		for (i = 0, n = groupsOrder.length; i < n; i++) {
+			optgroup = groupsOrder[i];
 			if (self.optgroups.hasOwnProperty(optgroup) && groups[optgroup].childNodes.length) {
 				// render the optgroup header and options within it,
 				// then pass it to the wrapper template
-				html_children = document.createDocumentFragment();
-				html_children.appendChild(self.render('optgroup_header', self.optgroups[optgroup]));
-				html_children.appendChild(groups[optgroup]);
+				htmlChildren = document.createDocumentFragment();
+				htmlChildren.appendChild(self.render('optgroupHeader', self.optgroups[optgroup]));
+				htmlChildren.appendChild(groups[optgroup]);
 
 				html.appendChild(self.render('optgroup', $.extend({}, self.optgroups[optgroup], {
-					html: domToString(html_children),
-					dom:  html_children
+					html: domToString(htmlChildren),
+					dom:  htmlChildren
 				})));
 			} else {
 				html.appendChild(groups[optgroup]);
 			}
 		}
 
-		$dropdown_content.html(html);
+		$dropdownContent.html(html);
 
 		// highlight matching terms inline
-		if (self.settings.highlight) {
-			$dropdown_content.removeHighlight();
-			if (results.query.length && results.tokens.length) {
-				for (i = 0, n = results.tokens.length; i < n; i++) {
-					highlight($dropdown_content, results.tokens[i].regex);
-				}
+		if (self.settings.highlight && results.query.length && results.tokens.length) {
+			$dropdownContent.removeHighlight();
+			for (i = 0, n = results.tokens.length; i < n; i++) {
+				highlight($dropdownContent, results.tokens[i].regex);
 			}
 		}
 
@@ -1143,19 +1146,19 @@ $.extend(Selectize.prototype, {
 		}
 
 		// add create option
-		has_create_option = self.canCreate(query);
-		if (has_create_option) {
-			$dropdown_content.prepend(self.render('option_create', {input: query}));
-			$create = $($dropdown_content[0].childNodes[0]);
+		hasCreateOption = self.canCreate(query);
+		if (hasCreateOption) {
+			$dropdownContent.prepend(self.render('optionCreate', {input: query}));
+			$create = $($dropdownContent[0].childNodes[0]);
 		}
 
 		// activate
-		self.hasOptions = results.items.length > 0 || has_create_option;
+		self.hasOptions = results.items.length > 0 || hasCreateOption;
 		if (self.hasOptions) {
 			if (results.items.length > 0) {
-				$active_before = active_before && self.getOption(active_before);
-				if ($active_before && $active_before.length) {
-					$active = $active_before;
+				$activeBefore = activeBefore && self.getOption(activeBefore);
+				if ($activeBefore && $activeBefore.length) {
+					$active = $activeBefore;
 				} else if (self.settings.mode === 'single' && self.items.length) {
 					$active = self.getOption(self.items[0]);
 				}
@@ -1163,7 +1166,7 @@ $.extend(Selectize.prototype, {
 					if ($create && !self.settings.addPrecedence) {
 						$active = self.getAdjacentOption($create, 1);
 					} else {
-						$active = $dropdown_content.find('[data-selectable]:first');
+						$active = $dropdownContent.find('[data-selectable]:first');
 					}
 				}
 			} else {
@@ -1202,7 +1205,7 @@ $.extend(Selectize.prototype, {
 		if (value = self.registerOption(data)) {
 			self.userOptions[value] = true;
 			self.lastQuery = null;
-			self.trigger('option_add', value, data);
+			self.trigger('optionAdd', value, data);
 		}
 	},
 
@@ -1213,7 +1216,7 @@ $.extend(Selectize.prototype, {
 	 * @return {boolean|string}
 	 */
 	registerOption: function(data) {
-		var key = hash_key(data[this.settings.valueField]);
+		var key = hashKey(data[this.settings.valueField]);
 		if (typeof key === 'undefined' || key === null || this.options.hasOwnProperty(key)) return false;
 		data.$order = data.$order || ++this.order;
 		this.options[key] = data;
@@ -1227,7 +1230,7 @@ $.extend(Selectize.prototype, {
 	 * @return {boolean|string}
 	 */
 	registerOptionGroup: function(data) {
-		var key = hash_key(data[this.settings.optgroupValueField]);
+		var key = hashKey(data[this.settings.optgroupValueField]);
 		if (!key) return false;
 
 		data.$order = data.$order || ++this.order;
@@ -1245,7 +1248,7 @@ $.extend(Selectize.prototype, {
 	addOptionGroup: function(id, data) {
 		data[this.settings.optgroupValueField] = id;
 		if (id = this.registerOptionGroup(data)) {
-			this.trigger('optgroup_add', id, data);
+			this.trigger('optgroupAdd', id, data);
 		}
 	},
 
@@ -1258,7 +1261,7 @@ $.extend(Selectize.prototype, {
 		if (this.optgroups.hasOwnProperty(id)) {
 			delete this.optgroups[id];
 			this.renderCache = {};
-			this.trigger('optgroup_remove', id);
+			this.trigger('optgroupRemove', id);
 		}
 	},
 
@@ -1268,7 +1271,7 @@ $.extend(Selectize.prototype, {
 	clearOptionGroups: function() {
 		this.optgroups = {};
 		this.renderCache = {};
-		this.trigger('optgroup_clear');
+		this.trigger('optgroupClear');
 	},
 
 	/**
@@ -1281,49 +1284,49 @@ $.extend(Selectize.prototype, {
 	 */
 	updateOption: function(value, data) {
 		var self = this;
-		var $item, $item_new;
-		var value_new, index_item, cache_items, cache_options, order_old;
+		var $item, $itemNew;
+		var valueNew, indexItem, cacheItems, cacheOptions, orderOld;
 
-		value     = hash_key(value);
-		value_new = hash_key(data[self.settings.valueField]);
+		value     = hashKey(value);
+		valueNew = hashKey(data[self.settings.valueField]);
 
 		// sanity checks
 		if (value === null) return;
 		if (!self.options.hasOwnProperty(value)) return;
-		if (typeof value_new !== 'string') throw new Error('Value must be set in option data');
+		if (typeof valueNew !== 'string') throw new Error('Value must be set in option data');
 
-		order_old = self.options[value].$order;
+		orderOld = self.options[value].$order;
 
 		// update references
-		if (value_new !== value) {
+		if (valueNew !== value) {
 			delete self.options[value];
-			index_item = self.items.indexOf(value);
-			if (index_item !== -1) {
-				self.items.splice(index_item, 1, value_new);
+			indexItem = self.items.indexOf(value);
+			if (indexItem !== -1) {
+				self.items.splice(indexItem, 1, valueNew);
 			}
 		}
-		data.$order = data.$order || order_old;
-		self.options[value_new] = data;
+		data.$order = data.$order || orderOld;
+		self.options[valueNew] = data;
 
 		// invalidate render cache
-		cache_items = self.renderCache['item'];
-		cache_options = self.renderCache['option'];
+		cacheItems = self.renderCache['item'];
+		cacheOptions = self.renderCache['option'];
 
-		if (cache_items) {
-			delete cache_items[value];
-			delete cache_items[value_new];
+		if (cacheItems) {
+			delete cacheItems[value];
+			delete cacheItems[valueNew];
 		}
-		if (cache_options) {
-			delete cache_options[value];
-			delete cache_options[value_new];
+		if (cacheOptions) {
+			delete cacheOptions[value];
+			delete cacheOptions[valueNew];
 		}
 
 		// update the item if it's selected
-		if (self.items.indexOf(value_new) !== -1) {
+		if (self.items.indexOf(valueNew) !== -1) {
 			$item = self.getItem(value);
-			$item_new = $(self.render('item', data));
-			if ($item.hasClass('active')) $item_new.addClass('active');
-			$item.replaceWith($item_new);
+			$itemNew = $(self.render('item', data));
+			if ($item.hasClass('active')) $itemNew.addClass('active');
+			$item.replaceWith($itemNew);
 		}
 
 		// invalidate last query because we might have updated the sortField
@@ -1343,17 +1346,17 @@ $.extend(Selectize.prototype, {
 	 */
 	removeOption: function(value, silent) {
 		var self = this;
-		value = hash_key(value);
+		value = hashKey(value);
 
-		var cache_items = self.renderCache['item'];
-		var cache_options = self.renderCache['option'];
-		if (cache_items) delete cache_items[value];
-		if (cache_options) delete cache_options[value];
+		var cacheItems = self.renderCache['item'];
+		var cacheOptions = self.renderCache['option'];
+		if (cacheItems) delete cacheItems[value];
+		if (cacheOptions) delete cacheOptions[value];
 
 		delete self.userOptions[value];
 		delete self.options[value];
 		self.lastQuery = null;
-		self.trigger('option_remove', value);
+		self.trigger('optionRemove', value);
 		self.removeItem(value, silent);
 	},
 
@@ -1368,7 +1371,7 @@ $.extend(Selectize.prototype, {
 		self.renderCache = {};
 		self.options = self.sifter.items = {};
 		self.lastQuery = null;
-		self.trigger('option_clear');
+		self.trigger('optionClear');
 		self.clear();
 	},
 
@@ -1380,7 +1383,7 @@ $.extend(Selectize.prototype, {
 	 * @returns {object}
 	 */
 	getOption: function(value) {
-		return this.getElementWithValue(value, this.$dropdown_content.find('[data-selectable]'));
+		return this.getElementWithValue(value, this.$dropdownContent.find('[data-selectable]'));
 	},
 
 	/**
@@ -1407,7 +1410,7 @@ $.extend(Selectize.prototype, {
 	 * @return {object}
 	 */
 	getElementWithValue: function(value, $els) {
-		value = hash_key(value);
+		value = hashKey(value);
 
 		if (typeof value !== 'undefined' && value !== null) {
 			for (var i = 0, n = $els.length; i < n; i++) {
@@ -1456,12 +1459,12 @@ $.extend(Selectize.prototype, {
 	addItem: function(value, silent) {
 		var events = silent ? [] : ['change'];
 
-		debounce_events(this, events, function() {
+		debounceEvents(this, events, function() {
 			var $item, $option, $options;
 			var self = this;
 			var inputMode = self.settings.mode;
-			var i, active, value_next, wasFull;
-			value = hash_key(value);
+			var i, active, valueNext, wasFull;
+			value = hashKey(value);
 
 			if (self.items.indexOf(value) !== -1) {
 				if (inputMode === 'single') self.close();
@@ -1481,15 +1484,15 @@ $.extend(Selectize.prototype, {
 			}
 
 			if (self.isSetup) {
-				$options = self.$dropdown_content.find('[data-selectable]');
+				$options = self.$dropdownContent.find('[data-selectable]');
 
 				// update menu / remove the option (if this is not one item being added as part of series)
 				if (!self.isPending) {
 					$option = self.getOption(value);
-					value_next = self.getAdjacentOption($option, 1).attr('data-value');
+					valueNext = self.getAdjacentOption($option, 1).attr('data-value');
 					self.refreshOptions(self.isFocused && inputMode !== 'single');
-					if (value_next) {
-						self.setActiveOption(self.getOption(value_next));
+					if (valueNext) {
+						self.setActiveOption(self.getOption(valueNext));
 					}
 				}
 
@@ -1501,7 +1504,7 @@ $.extend(Selectize.prototype, {
 				}
 
 				self.updatePlaceholder();
-				self.trigger('item_add', value, $item);
+				self.trigger('itemAdd', value, $item);
 				self.updateOriginalInput({silent: silent});
 			}
 		});
@@ -1518,7 +1521,7 @@ $.extend(Selectize.prototype, {
 		var $item, i, idx;
 
 		$item = (value instanceof $) ? value : self.getItem(value);
-		value = hash_key($item.attr('data-value'));
+		value = hashKey($item.attr('data-value'));
 		i = self.items.indexOf(value);
 
 		if (i !== -1) {
@@ -1542,7 +1545,7 @@ $.extend(Selectize.prototype, {
 			self.updatePlaceholder();
 			self.updateOriginalInput({silent: silent});
 			self.positionDropdown();
-			self.trigger('item_remove', value, $item);
+			self.trigger('itemRemove', value, $item);
 		}
 	},
 
@@ -1562,7 +1565,7 @@ $.extend(Selectize.prototype, {
 	createItem: function(input, triggerDropdown) {
 		var self  = this;
 		var caret = self.caretPos;
-		input = input || $.trim(self.$control_input.val() || '');
+		input = input || $.trim(self.$controlInput.val() || '');
 
 		var callback = arguments[arguments.length - 1];
 		if (typeof callback !== 'function') callback = function() {};
@@ -1589,7 +1592,7 @@ $.extend(Selectize.prototype, {
 			self.unlock();
 
 			if (!data || typeof data !== 'object') return callback();
-			var value = hash_key(data[self.settings.valueField]);
+			var value = hashKey(data[self.settings.valueField]);
 			if (typeof value !== 'string') return callback();
 
 			self.setTextboxValue('');
@@ -1645,7 +1648,7 @@ $.extend(Selectize.prototype, {
 		var invalid = !this.items.length;
 
 		this.isInvalid = invalid;
-		this.$control_input.prop('required', invalid);
+		this.$controlInput.prop('required', invalid);
 		this.$input.prop('required', !invalid);
 	},
 
@@ -1672,7 +1675,7 @@ $.extend(Selectize.prototype, {
 			.toggleClass('has-options', !$.isEmptyObject(self.options))
 			.toggleClass('has-items', self.items.length > 0);
 
-		self.$control_input.data('grow', !isFull && !isLocked);
+		self.$controlInput.data('grow', !isFull && !isLocked);
 	},
 
 	/**
@@ -1693,11 +1696,11 @@ $.extend(Selectize.prototype, {
 		var i, n, options, label, self = this;
 		opts = opts || {};
 
-		if (self.tagType === TAG_SELECT) {
+		if (self.tagType === consts.TAG_SELECT) {
 			options = [];
 			for (i = 0, n = self.items.length; i < n; i++) {
 				label = self.options[self.items[i]][self.settings.labelField] || '';
-				options.push('<option value="' + escape_html(self.items[i]) + '" selected="selected">' + escape_html(label) + '</option>');
+				options.push('<option value="' + escapeHtml(self.items[i]) + '" selected="selected">' + escapeHtml(label) + '</option>');
 			}
 			if (!options.length && !this.$input.attr('multiple')) {
 				options.push('<option value="" selected="selected"></option>');
@@ -1721,7 +1724,7 @@ $.extend(Selectize.prototype, {
 	 */
 	updatePlaceholder: function() {
 		if (!this.settings.placeholder) return;
-		var $input = this.$control_input;
+		var $input = this.$controlInput;
 
 		if (this.items.length) {
 			$input.removeAttr('placeholder');
@@ -1745,7 +1748,7 @@ $.extend(Selectize.prototype, {
 		self.$dropdown.css({visibility: 'hidden', display: 'block'});
 		self.positionDropdown();
 		self.$dropdown.css({visibility: 'visible'});
-		self.trigger('dropdown_open', self.$dropdown);
+		self.trigger('dropdownOpen', self.$dropdown);
 	},
 
 	/**
@@ -1757,9 +1760,7 @@ $.extend(Selectize.prototype, {
 
 		if (self.settings.mode === 'single' && self.items.length) {
 			self.hideInput();
-			setTimeout(function() {
-				self.$control_input.blur(); // close keyboard on iOS
-			});
+			self.$controlInput.blur(); // close keyboard on iOS
 		}
 
 		self.isOpen = false;
@@ -1767,7 +1768,7 @@ $.extend(Selectize.prototype, {
 		self.setActiveOption(null);
 		self.refreshState();
 
-		if (trigger) self.trigger('dropdown_close', self.$dropdown);
+		if (trigger) self.trigger('dropdownClose', self.$dropdown);
 	},
 
 	/**
@@ -1831,14 +1832,14 @@ $.extend(Selectize.prototype, {
 	 * @returns {boolean}
 	 */
 	deleteSelection: function(e) {
-		var i, n, direction, selection, values, caret, option_select, $option_select, $tail;
+		var i, n, direction, selection, values, caret, optionSelect, $optionSelect, $tail;
 		var self = this;
 
-		direction = (e && e.keyCode === KEY_BACKSPACE) ? -1 : 1;
-		selection = getSelection(self.$control_input[0]);
+		direction = (e && e.keyCode === consts.KEY_BACKSPACE) ? -1 : 1;
+		selection = getSelection(self.$controlInput[0]);
 
 		if (self.$activeOption && !self.settings.hideSelected) {
-			option_select = self.getAdjacentOption(self.$activeOption, -1).attr('data-value');
+			optionSelect = self.getAdjacentOption(self.$activeOption, -1).attr('data-value');
 		}
 
 		// determine items that will be removed
@@ -1859,7 +1860,7 @@ $.extend(Selectize.prototype, {
 		} else if ((self.isFocused || self.settings.mode === 'single') && self.items.length) {
 			if (direction < 0 && selection.start === 0 && selection.length === 0) {
 				values.push(self.items[self.caretPos - 1]);
-			} else if (direction > 0 && selection.start === self.$control_input.val().length) {
+			} else if (direction > 0 && selection.start === self.$controlInput.val().length) {
 				values.push(self.items[self.caretPos]);
 			}
 		}
@@ -1882,10 +1883,10 @@ $.extend(Selectize.prototype, {
 		self.refreshOptions(true);
 
 		// select previous option
-		if (option_select) {
-			$option_select = self.getOption(option_select);
-			if ($option_select.length) {
-				self.setActiveOption($option_select);
+		if (optionSelect) {
+			$optionSelect = self.getOption(optionSelect);
+			if ($optionSelect.length) {
+				self.setActiveOption($optionSelect);
 			}
 		}
 
@@ -1910,10 +1911,10 @@ $.extend(Selectize.prototype, {
 		if (self.rtl) direction *= -1;
 
 		tail = direction > 0 ? 'last' : 'first';
-		selection = getSelection(self.$control_input[0]);
+		selection = getSelection(self.$controlInput[0]);
 
 		if (self.isFocused && !self.isInputHidden) {
-			valueLength = self.$control_input.val().length;
+			valueLength = self.$controlInput.val().length;
 			cursorAtEdge = direction < 0
 				? selection.start === 0 && selection.length === 0
 				: selection.start === valueLength;
@@ -1944,7 +1945,7 @@ $.extend(Selectize.prototype, {
 
 		fn = direction > 0 ? 'next' : 'prev';
 		if (self.isShiftDown) {
-			$adj = self.$control_input[fn]();
+			$adj = self.$controlInput[fn]();
 			if ($adj.length) {
 				self.hideInput();
 				self.setActiveItem($adj);
@@ -1978,7 +1979,7 @@ $.extend(Selectize.prototype, {
 			for (j = 0, n = $children.length; j < n; j++) {
 				$child = $($children[j]).detach();
 				if (j <  i) {
-					self.$control_input.before($child);
+					self.$controlInput.before($child);
 				} else {
 					self.$control.append($child);
 				}
@@ -2013,7 +2014,7 @@ $.extend(Selectize.prototype, {
 	disable: function() {
 		var self = this;
 		self.$input.prop('disabled', true);
-		self.$control_input.prop('disabled', true).prop('tabindex', -1);
+		self.$controlInput.prop('disabled', true).prop('tabindex', -1);
 		self.isDisabled = true;
 		self.lock();
 	},
@@ -2025,7 +2026,7 @@ $.extend(Selectize.prototype, {
 	enable: function() {
 		var self = this;
 		self.$input.prop('disabled', false);
-		self.$control_input.prop('disabled', false).prop('tabindex', self.tabIndex);
+		self.$controlInput.prop('disabled', false).prop('tabindex', self.tabIndex);
 		self.isDisabled = false;
 		self.unlock();
 	},
@@ -2053,7 +2054,7 @@ $.extend(Selectize.prototype, {
 			.attr({tabindex: revertSettings.tabindex})
 			.show();
 
-		self.$control_input.removeData('grow');
+		self.$controlInput.removeData('grow');
 		self.$input.removeData('selectize');
 
 		$(window).off(eventNS);
@@ -2076,10 +2077,10 @@ $.extend(Selectize.prototype, {
 		var html = '';
 		var cache = false;
 		var self = this;
-		var regex_tag = /^[\t \r\n]*<([a-z][a-z0-9\-_]*(?:\:[a-z][a-z0-9\-_]*)?)/i;
+		var regexTag = /^[\t \r\n]*<([a-z][a-z0-9\-]*(?:\:[a-z][a-z0-9\-]*)?)/i;
 
 		if (templateName === 'option' || templateName === 'item') {
-			value = hash_key(data[self.settings.valueField]);
+			value = hashKey(data[self.settings.valueField]);
 			cache = !!value;
 		}
 
@@ -2094,20 +2095,15 @@ $.extend(Selectize.prototype, {
 		}
 
 		// render markup
-		html = $(self.settings.render[templateName].apply(this, [data, escape_html]));
+		html = $(self.settings.render[templateName].apply(this, [data, escapeHtml]));
 
 		// add mandatory attributes
-		if (templateName === 'option' || templateName === 'option_create') {
-			if (!data[self.settings.disabledField]) {
-				html.attr('data-selectable', '');
-			}
+		if (templateName === 'option' || templateName === 'optionCreate') {
+			html.attr('data-selectable', '');
 		}
 		else if (templateName === 'optgroup') {
 			id = data[self.settings.optgroupValueField] || '';
 			html.attr('data-group', id);
-			if(data[self.settings.disabledField]) {
-				html.attr('data-disabled', '');
-			}
 		}
 		if (templateName === 'option' || templateName === 'item') {
 			html.attr('data-value', value || '');

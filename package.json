@@ -22,7 +22,7 @@
   "dependencies": {
     "jquery": "^1.7.0",
     "microplugin": "0.0.3",
-    "sifter": "^0.5.1"
+    "es-sifter": "^0.5.2"
   },
   "devDependencies": {
     "chai": "^3.5.0",
@@ -37,6 +37,7 @@
     "grunt-contrib-uglify": "^2.0.0",
     "grunt-contrib-watch": "1.x",
     "grunt-replace": "^1.0.1",
+    "handroll": "0.3.5",
     "karma": "^1.3.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.0.0",

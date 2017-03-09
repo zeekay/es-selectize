@@ -37,8 +37,7 @@ Selectize.define('remove_button', function(options) {
 			 * @return {string}
 			 */
 			var append = function(html_container, html_element) {
-				return $('<span>').append(html_container)
-					.append(html_element);
+				return html_container + html_element;
 			};
 
 			thisRef.setup = (function() {

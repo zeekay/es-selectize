@@ -1,12 +1,14 @@
+import consts from './utils'
+
 /**
  * Determines if the provided value has been defined.
  *
  * @param {mixed} object
  * @returns {boolean}
  */
-var isset = function(object) {
+export function isSet(object) {
 	return typeof object !== 'undefined';
-};
+}
 
 /**
  * Converts a scalar to its best string representation
@@ -24,11 +26,11 @@ var isset = function(object) {
  * @param {string} value
  * @returns {string|null}
  */
-var hash_key = function(value) {
+export function hashKey(value) {
 	if (typeof value === 'undefined' || value === null) return null;
 	if (typeof value === 'boolean') return value ? '1' : '0';
 	return value + '';
-};
+}
 
 /**
  * Escapes a string for use within HTML.
@@ -36,13 +38,13 @@ var hash_key = function(value) {
  * @param {string} str
  * @returns {string}
  */
-var escape_html = function(str) {
+export function escapeHtml(str) {
 	return (str + '')
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')
 		.replace(/>/g, '&gt;')
 		.replace(/"/g, '&quot;');
-};
+}
 
 /**
  * Escapes "$" characters in replacement strings.
@@ -50,11 +52,11 @@ var escape_html = function(str) {
  * @param {string} str
  * @returns {string}
  */
-var escape_replace = function(str) {
+export function escapeReplace(str) {
 	return (str + '').replace(/\$/g, '$$$$');
-};
+}
 
-var hook = {};
+export const hook = {};
 
 /**
  * Wraps `method` on `self` so that `fn`
@@ -95,14 +97,14 @@ hook.after = function(self, method, fn) {
  * @param {function} fn
  * @returns {function}
  */
-var once = function(fn) {
+export function once(fn) {
 	var called = false;
 	return function() {
 		if (called) return;
 		called = true;
 		fn.apply(this, arguments);
 	};
-};
+}
 
 /**
  * Wraps `fn` so that it can only be called once
@@ -112,7 +114,7 @@ var once = function(fn) {
  * @param {int} delay
  * @returns {function}
  */
-var debounce = function(fn, delay) {
+export function debounce(fn, delay) {
 	var timeout;
 	return function() {
 		var self = this;
@@ -122,7 +124,7 @@ var debounce = function(fn, delay) {
 			fn.apply(self, args);
 		}, delay);
 	};
-};
+}
 
 /**
  * Debounce all fired events types listed in `types`
@@ -132,16 +134,16 @@ var debounce = function(fn, delay) {
  * @param {array} types
  * @param {function} fn
  */
-var debounce_events = function(self, types, fn) {
+export function debounceEvents(self, types, fn) {
 	var type;
 	var trigger = self.trigger;
-	var event_args = {};
+	var eventArgs = {};
 
 	// override trigger method
 	self.trigger = function() {
 		var type = arguments[0];
 		if (types.indexOf(type) !== -1) {
-			event_args[type] = arguments;
+			eventArgs[type] = arguments;
 		} else {
 			return trigger.apply(self, arguments);
 		}
@@ -152,12 +154,12 @@ var debounce_events = function(self, types, fn) {
 	self.trigger = trigger;
 
 	// trigger queued events
-	for (type in event_args) {
-		if (event_args.hasOwnProperty(type)) {
-			trigger.apply(self, event_args[type]);
+	for (type in eventArgs) {
+		if (eventArgs.hasOwnProperty(type)) {
+			trigger.apply(self, eventArgs[type]);
 		}
 	}
-};
+}
 
 /**
  * A workaround for http://bugs.jquery.com/ticket/6696
@@ -167,7 +169,7 @@ var debounce_events = function(self, types, fn) {
  * @param {string} selector - Descendant selector to filter by.
  * @param {function} fn - Event handler.
  */
-var watchChildEvent = function($parent, event, selector, fn) {
+export function watchChildEvent($parent, event, selector, fn) {
 	$parent.on(event, selector, function(e) {
 		var child = e.target;
 		while (child && child.parentNode !== $parent[0]) {
@@ -176,7 +178,7 @@ var watchChildEvent = function($parent, event, selector, fn) {
 		e.currentTarget = child;
 		return fn.apply(this, [e]);
 	});
-};
+}
 
 /**
  * Determines the current selection within a text input control.
@@ -187,7 +189,7 @@ var watchChildEvent = function($parent, event, selector, fn) {
  * @param {object} input
  * @returns {object}
  */
-var getSelection = function(input) {
+export function getSelection(input) {
 	var result = {};
 	if ('selectionStart' in input) {
 		result.start = input.selectionStart;
@@ -201,7 +203,7 @@ var getSelection = function(input) {
 		result.length = selLen;
 	}
 	return result;
-};
+}
 
 /**
  * Copies CSS properties from one element to another.
@@ -210,7 +212,7 @@ var getSelection = function(input) {
  * @param {object} $to
  * @param {array} properties
  */
-var transferStyles = function($from, $to, properties) {
+export function transferStyles($from, $to, properties) {
 	var i, n, styles = {};
 	if (properties) {
 		for (i = 0, n = properties.length; i < n; i++) {
@@ -220,7 +222,7 @@ var transferStyles = function($from, $to, properties) {
 		styles = $from.css();
 	}
 	$to.css(styles);
-};
+}
 
 /**
  * Measures the width of a string within a
@@ -230,7 +232,7 @@ var transferStyles = function($from, $to, properties) {
  * @param {object} $parent
  * @returns {int}
  */
-var measureString = function(str, $parent) {
+export function measureString(str, $parent) {
 	if (!str) {
 		return 0;
 	}
@@ -256,7 +258,7 @@ var measureString = function(str, $parent) {
 	$test.remove();
 
 	return width;
-};
+}
 
 /**
  * Sets up an input to grow horizontally as the user
@@ -267,7 +269,7 @@ var measureString = function(str, $parent) {
  *
  * @param {object} $input
  */
-var autoGrow = function($input) {
+export function autoGrow($input) {
 	var currentWidth = null;
 
 	var update = function(e, options) {
@@ -289,13 +291,13 @@ var autoGrow = function($input) {
 				keyCode === 32 // space
 			);
 
-			if (keyCode === KEY_DELETE || keyCode === KEY_BACKSPACE) {
+			if (keyCode === consts.consts.KEY_DELETE || keyCode === consts.consts.KEY_BACKSPACE) {
 				selection = getSelection($input[0]);
 				if (selection.length) {
 					value = value.substring(0, selection.start) + value.substring(selection.start + selection.length);
-				} else if (keyCode === KEY_BACKSPACE && selection.start) {
+				} else if (keyCode === consts.KEY_BACKSPACE && selection.start) {
 					value = value.substring(0, selection.start - 1) + value.substring(selection.start + 1);
-				} else if (keyCode === KEY_DELETE && typeof selection.start !== 'undefined') {
+				} else if (keyCode === consts.KEY_DELETE && typeof selection.start !== 'undefined') {
 					value = value.substring(0, selection.start) + value.substring(selection.start + 1);
 				}
 			} else if (printable) {
@@ -322,21 +324,21 @@ var autoGrow = function($input) {
 
 	$input.on('keydown keyup update blur', update);
 	update();
-};
+}
 
-var domToString = function(d) {
+export function domToString(d) {
 	var tmp = document.createElement('div');
 
 	tmp.appendChild(d.cloneNode(true));
 
 	return tmp.innerHTML;
-};
+}
 
-var logError = function(message, options){
+export function logError(message, options){
 	if(!options) options = {};
-	var component = "Selectize";
+	var component = 'Selectize';
 
-	console.error(component + ": " + message)
+	console.error(component + ': ' + message)
 
 	if(options.explanation){
 		// console.group is undefined in <IE11

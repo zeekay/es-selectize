@@ -1,3 +1,5 @@
+import Selectize from './selectize'
+
 Selectize.count = 0;
 Selectize.defaults = {
 	options: [],
@@ -30,7 +32,6 @@ Selectize.defaults = {
 	optgroupField: 'optgroup',
 	valueField: 'value',
 	labelField: 'text',
-	disabledField: 'disabled',
 	optgroupLabelField: 'label',
 	optgroupValueField: 'value',
 	lockOptgroupOrder: false,

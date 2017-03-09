@@ -1,12 +1,20 @@
 .PHONY: compile release test
-plugins=*
-GRUNT=node_modules/.bin/grunt
+
+UGLIFYJS=node_modules/.bin/uglifyjs
+HANDROLL=node_modules/.bin/handroll
+
+OUT=selectize.js
+OUT_MIN=selectize.min.js
+BANNER=/*! selectize.js | https://github.com/brianreavis/selectize.js | Apache License (v2) */
 
 all: compile
 test:
 	npm test
 compile:
-	$(GRUNT) --plugins=$(plugins)
+	$(HANDROLL) src/index.js --format lib
+	$(UGLIFYJS) --mangle -b beautify=false,ascii-only=true --output $(OUT_MIN) $(OUT)
+	@echo "$(BANNER)" | cat - $(OUT_MIN) > temp && mv temp $(OUT_MIN)
+	@echo "`cat $(OUT_MIN) | gzip -9f | wc -c` bytes (gzipped)"
 release:
 ifeq ($(strip $(version)),)
 	@echo "\033[31mERROR:\033[0;39m No version provided."
