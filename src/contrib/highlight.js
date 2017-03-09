@@ -6,7 +6,7 @@
  * - Modified by Brian Reavis <brian@thirdroute.com> 2012-8-27 (cleanup)
  */
 
-var highlight = function($element, pattern) {
+export default function highlight($element, pattern) {
 	if (typeof pattern === 'string' && !pattern.length) return;
 	var regex = (typeof pattern === 'string') ? new RegExp(pattern, 'i') : pattern;
 
@@ -15,11 +15,11 @@ var highlight = function($element, pattern) {
 		if (node.nodeType === 3) {
 			var pos = node.data.search(regex);
 			if (pos >= 0 && node.data.length > 0) {
-				var match = node.data.match(regex);
+				// var match = node.data.match(regex);
 				var spannode = document.createElement('span');
 				spannode.className = 'highlight';
 				var middlebit = node.splitText(pos);
-				var endbit = middlebit.splitText(match[0].length);
+				// var endbit = middlebit.splitText(match[0].length);
 				var middleclone = middlebit.cloneNode(true);
 				spannode.appendChild(middleclone);
 				middlebit.parentNode.replaceChild(spannode, middlebit);
@@ -36,15 +36,15 @@ var highlight = function($element, pattern) {
 	return $element.each(function() {
 		highlight(this);
 	});
-};
+}
 
 /**
  * removeHighlight fn copied from highlight v5 and
  * edited to remove with() and pass js strict mode
  */
 $.fn.removeHighlight = function() {
-	return this.find("span.highlight").each(function() {
-		this.parentNode.firstChild.nodeName;
+	return this.find('span.highlight').each(function() {
+		// this.parentNode.firstChild.nodeName;
 		var parent = this.parentNode;
 		parent.replaceChild(this.firstChild, this);
 		parent.normalize();

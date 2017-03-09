@@ -3,9 +3,10 @@ import MicroPlugin from 'es-microplugin'
 
 import './defaults'
 import './selectize.jquery.js'
-import MicroEvent from './contrib/microevent'
 
-import {autoGrow, debounce, debounceEvents, hashKey, isSet, watchChildEvent} from './utils'
+import MicroEvent from './contrib/microevent'
+import highlight  from './contrib/highlight'
+
 import {
     IS_MAC,
 
@@ -15,6 +16,12 @@ import {
     TAG_SELECT, TAG_INPUT,
     SUPPORTS_VALIDITY_API
 } from './consts'
+
+import {
+    autoGrow, debounce, debounceEvents, domToString, escapeHtml, getSelection,
+    hashKey, isSet, once, watchChildEvent
+} from './utils'
+
 
 export default function Selectize($input, settings) {
 	var i, n, dir, input, self = this;
@@ -145,7 +152,7 @@ $.extend(Selectize.prototype, {
 
 		if(inputId = $input.attr('id')) {
 			$controlInput.attr('id', inputId + '-selectized');
-			$(`label[for='"+inputId+"']`).attr('for', inputId + '-selectized');
+			$('label[for="'+inputId+'"]').attr('for', inputId + '-selectized');
 		}
 
 		if(self.settings.copyClassesToDropdown) {
@@ -1307,8 +1314,8 @@ $.extend(Selectize.prototype, {
 		self.options[valueNew] = data;
 
 		// invalidate render cache
-		cacheItems = self.renderCache['item'];
-		cacheOptions = self.renderCache['option'];
+		cacheItems = self.renderCache.item;
+		cacheOptions = self.renderCache.option;
 
 		if (cacheItems) {
 			delete cacheItems[value];
@@ -1346,8 +1353,8 @@ $.extend(Selectize.prototype, {
 		var self = this;
 		value = hashKey(value);
 
-		var cacheItems = self.renderCache['item'];
-		var cacheOptions = self.renderCache['option'];
+		var cacheItems = self.renderCache.item;
+		var cacheOptions = self.renderCache.option;
 		if (cacheItems) delete cacheItems[value];
 		if (cacheOptions) delete cacheOptions[value];
 
@@ -1461,7 +1468,7 @@ $.extend(Selectize.prototype, {
 			var $item, $option, $options;
 			var self = this;
 			var inputMode = self.settings.mode;
-			var i, active, valueNext, wasFull;
+			var valueNext, wasFull;
 			value = hashKey(value);
 
 			if (self.items.indexOf(value) !== -1) {
@@ -1913,9 +1920,8 @@ $.extend(Selectize.prototype, {
 
 		if (self.isFocused && !self.isInputHidden) {
 			valueLength = self.$controlInput.val().length;
-			cursorAtEdge = direction < 0
-				? selection.start === 0 && selection.length === 0
-				: selection.start === valueLength;
+            cursorAtEdge = direction < 0 ? selection.start === 0 &&
+              selection.length === 0 : selection.start === valueLength;
 
 			if (cursorAtEdge && !valueLength) {
 				self.advanceCaret(direction, e);
@@ -1947,7 +1953,7 @@ $.extend(Selectize.prototype, {
 			if ($adj.length) {
 				self.hideInput();
 				self.setActiveItem($adj);
-				e && e.preventDefault();
+				if(e) e.preventDefault();
 			}
 		} else {
 			self.setCaret(self.caretPos + direction);
@@ -1972,7 +1978,7 @@ $.extend(Selectize.prototype, {
 			// the input must be moved by leaving it in place and moving the
 			// siblings, due to the fact that focus cannot be restored once lost
 			// on mobile webkit devices
-			var j, n, fn, $children, $child;
+			var j, n, $children, $child;
 			$children = self.$control.children(':not(input)');
 			for (j = 0, n = $children.length; j < n; j++) {
 				$child = $($children[j]).detach();
@@ -2071,11 +2077,11 @@ $.extend(Selectize.prototype, {
 	 * @returns {string}
 	 */
 	render: function(templateName, data) {
-		var value, id, label;
+		var value, id;
 		var html = '';
 		var cache = false;
 		var self = this;
-		var regexTag = /^[\t \r\n]*<([a-z][a-z0-9\-]*(?:\:[a-z][a-z0-9\-]*)?)/i;
+		// var regexTag = /^[\t \r\n]*<([a-z][a-z0-9\-]*(?:\:[a-z][a-z0-9\-]*)?)/i;
 
 		if (templateName === 'option' || templateName === 'item') {
 			value = hashKey(data[self.settings.valueField]);
@@ -2084,7 +2090,7 @@ $.extend(Selectize.prototype, {
 
 		// pull markup from cache if it exists
 		if (cache) {
-			if (!isset(self.renderCache[templateName])) {
+			if (!isSet(self.renderCache[templateName])) {
 				self.renderCache[templateName] = {};
 			}
 			if (self.renderCache[templateName].hasOwnProperty(value)) {

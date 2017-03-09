@@ -1,6 +1,3 @@
-var Selectize = (function () {
-'use strict';
-
 var DIACRITICS = {
     'a': '[aḀḁĂăÂâǍǎȺⱥȦȧẠạÄäÀàÁáĀāÃãÅåąĄÃąĄ]',
     'b': '[b␢βΒB฿𐌁ᛒ]',
@@ -3503,7 +3500,5 @@ $.extend(Selectize$1.prototype, {
 
 });
 
-return Selectize$1;
-
-}());
-//# sourceMappingURL=selectize.js.map
+export default Selectize$1;
+//# sourceMappingURL=selectize.mjs.map
