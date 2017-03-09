@@ -1,8 +1,10 @@
+import Sifter from 'es-sifter'
+
 import './defaults'
 import './selectize.jquery.js'
-import consts from './constants'
-import {autoGrow, debounce} from './utils.js'
-import Sifter from 'es-sifter'
+import * as consts from './consts'
+import {autoGrow, debounce} from './utils'
+
 
 export default function Selectize($input, settings) {
 	var i, n, dir, input, self = this;
@@ -86,9 +88,7 @@ export default function Selectize($input, settings) {
 	self.setupCallbacks();
 	self.setupTemplates();
 	self.setup();
-};
-
-export default Selectize;
+}
 
 // mixins
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
