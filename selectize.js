@@ -3347,7 +3347,7 @@ $.extend(Selectize.prototype, {
 
 });
 
-function selectize(optsUser) {
+function selectize($select, optsUser) {
     var opts               = $.extend({}, defaults, optsUser);
     var attrData           = opts.dataAttr;
     var fieldLabel         = opts.labelField;
@@ -3474,7 +3474,7 @@ function selectize(optsUser) {
         }
     };
 
-    return this.each(function() {
+    return $select.each(function() {
         if (this.selectize) return;
 
         var instance;
