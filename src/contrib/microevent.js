@@ -8,7 +8,8 @@
  * @author Jerome Etienne (https://github.com/jeromeetienne)
  */
 
-var MicroEvent = function() {};
+export default function MicroEvent() {}
+
 MicroEvent.prototype = {
 	on: function(event, fct){
 		this._events = this._events || {};

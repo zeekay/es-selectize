@@ -1,4 +1,4 @@
-import consts from './consts'
+import {KEY_BACKSPACE, KEY_DELETE} from './consts'
 
 /**
  * Determines if the provided value has been defined.
@@ -291,13 +291,13 @@ export function autoGrow($input) {
 				keyCode === 32 // space
 			);
 
-			if (keyCode === consts.consts.KEY_DELETE || keyCode === consts.consts.KEY_BACKSPACE) {
+			if (keyCode === KEY_DELETE || keyCode === KEY_BACKSPACE) {
 				selection = getSelection($input[0]);
 				if (selection.length) {
 					value = value.substring(0, selection.start) + value.substring(selection.start + selection.length);
-				} else if (keyCode === consts.KEY_BACKSPACE && selection.start) {
+				} else if (keyCode === KEY_BACKSPACE && selection.start) {
 					value = value.substring(0, selection.start - 1) + value.substring(selection.start + 1);
-				} else if (keyCode === consts.KEY_DELETE && typeof selection.start !== 'undefined') {
+				} else if (keyCode === KEY_DELETE && typeof selection.start !== 'undefined') {
 					value = value.substring(0, selection.start) + value.substring(selection.start + 1);
 				}
 			} else if (printable) {

@@ -1,10 +1,20 @@
-import Sifter from 'es-sifter'
+import Sifter      from 'es-sifter'
+import MicroPlugin from 'es-microplugin'
 
 import './defaults'
 import './selectize.jquery.js'
-import * as consts from './consts'
-import {autoGrow, debounce} from './utils'
+import MicroEvent from './contrib/microevent'
 
+import {autoGrow, debounce, debounceEvents, hashKey, isSet, watchChildEvent} from './utils'
+import {
+    IS_MAC,
+
+    KEY_A, KEY_RETURN, KEY_ESC, KEY_LEFT, KEY_UP, KEY_P, KEY_RIGHT, KEY_DOWN,
+    KEY_N, KEY_BACKSPACE, KEY_DELETE, KEY_SHIFT, KEY_CMD, KEY_CTRL, KEY_TAB,
+
+    TAG_SELECT, TAG_INPUT,
+    SUPPORTS_VALIDITY_API
+} from './consts'
 
 export default function Selectize($input, settings) {
 	var i, n, dir, input, self = this;
@@ -22,7 +32,7 @@ export default function Selectize($input, settings) {
 		settings         : settings,
 		$input           : $input,
 		tabIndex         : $input.attr('tabindex') || '',
-		tagType          : input.tagName.toLowerCase() === 'select' ? consts.TAG_SELECT : consts.TAG_INPUT,
+		tagType          : input.tagName.toLowerCase() === 'select' ? TAG_SELECT : TAG_INPUT,
 		rtl              : /rtl/i.test(dir),
 
 		eventNS          : '.selectize' + (++Selectize.count),
@@ -94,18 +104,7 @@ export default function Selectize($input, settings) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 MicroEvent.mixin(Selectize);
-
-if (typeof MicroPlugin !== 'undefined') {
-	MicroPlugin.mixin(Selectize);
-} else {
-	logError('Dependency MicroPlugin is missing',
-		{explanation:
-			'Make sure you either: (1) are using the \'standalone\' '+
-			'version of Selectize, or (2) require MicroPlugin before you '+
-			'load Selectize.'}
-	);
-}
-
+MicroPlugin.mixin(Selectize);
 
 // methods
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -130,8 +129,6 @@ $.extend(Selectize.prototype, {
 		var $dropdownContent;
 		var $dropdownParent;
 		var inputMode;
-		var timeoutBlur;
-		var timeoutFocus;
 		var classes;
 		var classesPlugins;
 		var inputId;
@@ -148,7 +145,7 @@ $.extend(Selectize.prototype, {
 
 		if(inputId = $input.attr('id')) {
 			$controlInput.attr('id', inputId + '-selectized');
-			$("label[for='"+inputId+"']").attr('for', inputId + '-selectized');
+			$(`label[for='"+inputId+"']`).attr('for', inputId + '-selectized');
 		}
 
 		if(self.settings.copyClassesToDropdown) {
@@ -165,7 +162,7 @@ $.extend(Selectize.prototype, {
 			$dropdown.addClass(classesPlugins);
 		}
 
-		if ((settings.maxItems === null || settings.maxItems > 1) && self.tagType === consts.TAG_SELECT) {
+		if ((settings.maxItems === null || settings.maxItems > 1) && self.tagType === TAG_SELECT) {
 			$input.attr('multiple', 'multiple');
 		}
 
@@ -215,15 +212,15 @@ $.extend(Selectize.prototype, {
 		});
 
 		$document.on('keydown' + eventNS, function(e) {
-			self.isCmdDown = e[consts.IS_MAC ? 'metaKey' : 'ctrlKey'];
-			self.isCtrlDown = e[consts.IS_MAC ? 'altKey' : 'ctrlKey'];
+			self.isCmdDown = e[IS_MAC ? 'metaKey' : 'ctrlKey'];
+			self.isCtrlDown = e[IS_MAC ? 'altKey' : 'ctrlKey'];
 			self.isShiftDown = e.shiftKey;
 		});
 
 		$document.on('keyup' + eventNS, function(e) {
-			if (e.keyCode === consts.KEY_CTRL) self.isCtrlDown = false;
-			if (e.keyCode === consts.KEY_SHIFT) self.isShiftDown = false;
-			if (e.keyCode === consts.KEY_CMD) self.isCmdDown = false;
+			if (e.keyCode === KEY_CTRL) self.isCtrlDown = false;
+			if (e.keyCode === KEY_SHIFT) self.isShiftDown = false;
+			if (e.keyCode === KEY_CMD) self.isCmdDown = false;
 		});
 
 		$document.on('mousedown' + eventNS, function(e) {
@@ -263,7 +260,7 @@ $.extend(Selectize.prototype, {
 		}
 
 		// feature detect for the validation API
-		if (consts.SUPPORTS_VALIDITY_API) {
+		if (SUPPORTS_VALIDITY_API) {
 			$input.on('invalid' + eventNS, function(e) {
 				e.preventDefault();
 				self.isInvalid = true;
@@ -384,7 +381,6 @@ $.extend(Selectize.prototype, {
 	onMouseDown: function(e) {
 		var self = this;
 		var defaultPrevented = e.isDefaultPrevented();
-		var $target = $(e.target);
 
 		if (self.isFocused) {
 			// retain focus by preventing native handling. if the
@@ -393,18 +389,21 @@ $.extend(Selectize.prototype, {
 			if (e.target !== self.$controlInput[0]) {
 				if (self.settings.mode === 'single') {
 					// toggle dropdown
-					self.isOpen ? self.close() : self.open();
+					if (self.isOpen)
+					  self.close()
+					else
+					  self.open()
 				} else if (!defaultPrevented) {
-					self.setActiveItem(null);
+					self.setActiveItem(null)
 				}
-				return false;
+				return false
 			}
 		} else {
 			// give control focus
 			if (!defaultPrevented) {
 				window.setTimeout(function() {
-					self.focus();
-				}, 0);
+					self.focus()
+				}, 0)
 			}
 		}
 	},
@@ -472,33 +471,32 @@ $.extend(Selectize.prototype, {
 	 * @returns {boolean}
 	 */
 	onKeyDown: function(e) {
-		var isInput = e.target === this.$controlInput[0];
 		var self = this;
 
 		if (self.isLocked) {
-			if (e.keyCode !== consts.KEY_TAB) {
+			if (e.keyCode !== KEY_TAB) {
 				e.preventDefault();
 			}
 			return;
 		}
 
 		switch (e.keyCode) {
-			case consts.consts.KEY_A:
+			case KEY_A:
 				if (self.isCmdDown) {
 					self.selectAll();
 					return;
 				}
 				break;
-			case consts.KEY_ESC:
+			case KEY_ESC:
 				if (self.isOpen) {
 					e.preventDefault();
 					e.stopPropagation();
 					self.close();
 				}
 				return;
-			case consts.KEY_N:
+			case KEY_N:
 				if (!e.ctrlKey || e.altKey) break;
-			case consts.KEY_DOWN:
+			case KEY_DOWN:
 				if (!self.isOpen && self.hasOptions) {
 					self.open();
 				} else if (self.$activeOption) {
@@ -508,9 +506,9 @@ $.extend(Selectize.prototype, {
 				}
 				e.preventDefault();
 				return;
-			case consts.KEY_P:
+			case KEY_P:
 				if (!e.ctrlKey || e.altKey) break;
-			case consts.KEY_UP:
+			case KEY_UP:
 				if (self.$activeOption) {
 					self.ignoreHover = true;
 					var $prev = self.getAdjacentOption(self.$activeOption, -1);
@@ -518,19 +516,19 @@ $.extend(Selectize.prototype, {
 				}
 				e.preventDefault();
 				return;
-			case consts.KEY_RETURN:
+			case KEY_RETURN:
 				if (self.isOpen && self.$activeOption) {
 					self.onOptionSelect({currentTarget: self.$activeOption});
 					e.preventDefault();
 				}
 				return;
-			case consts.KEY_LEFT:
+			case KEY_LEFT:
 				self.advanceSelection(-1, e);
 				return;
-			case consts.KEY_RIGHT:
+			case KEY_RIGHT:
 				self.advanceSelection(1, e);
 				return;
-			case consts.KEY_TAB:
+			case KEY_TAB:
 				if (self.settings.selectOnTab && self.isOpen && self.$activeOption) {
 					self.onOptionSelect({currentTarget: self.$activeOption});
 
@@ -544,13 +542,13 @@ $.extend(Selectize.prototype, {
 					e.preventDefault();
 				}
 				return;
-			case consts.KEY_BACKSPACE:
-			case consts.KEY_DELETE:
+			case KEY_BACKSPACE:
+			case KEY_DELETE:
 				self.deleteSelection(e);
 				return;
 		}
 
-		if ((self.isFull() || self.isInputHidden) && !(consts.IS_MAC ? e.metaKey : e.ctrlKey)) {
+		if ((self.isFull() || self.isInputHidden) && !(IS_MAC ? e.metaKey : e.ctrlKey)) {
 			e.preventDefault();
 			return;
 		}
@@ -606,7 +604,7 @@ $.extend(Selectize.prototype, {
 
 		if (self.isDisabled) {
 			self.blur();
-			e && e.preventDefault();
+			if (e) e.preventDefault()
 			return false;
 		}
 
@@ -654,7 +652,7 @@ $.extend(Selectize.prototype, {
 			self.refreshState();
 
 			// IE11 bug: element still marked as active
-			dest && dest.focus && dest.focus();
+			if (dest && dest.focus) dest.focus();
 
 			self.ignoreFocus = false;
 			self.trigger('blur');
@@ -688,7 +686,7 @@ $.extend(Selectize.prototype, {
 	 * @returns {boolean}
 	 */
 	onOptionSelect: function(e) {
-		var value, $target, $option, self = this;
+		var value, $target, self = this;
 
 		if (e.preventDefault) {
 			e.preventDefault();
@@ -782,7 +780,7 @@ $.extend(Selectize.prototype, {
 	 * @returns {mixed}
 	 */
 	getValue: function() {
-		if (this.tagType === consts.TAG_SELECT && this.$input.attr('multiple')) {
+		if (this.tagType === TAG_SELECT && this.$input.attr('multiple')) {
 			return this.items;
 		} else {
 			return this.items.join(this.settings.delimiter);
@@ -889,7 +887,7 @@ $.extend(Selectize.prototype, {
 
 		self.$activeOption = $option.addClass('active');
 
-		if (scroll || !isset(scroll)) {
+		if (scroll || !isSet(scroll)) {
 
 			heightMenu   = self.$dropdownContent.height();
 			heightItem   = self.$activeOption.outerHeight(true);
@@ -1016,7 +1014,7 @@ $.extend(Selectize.prototype, {
 	 * @returns {object}
 	 */
 	search: function(query) {
-		var i, value, score, result, calculateScore;
+		var i, result, calculateScore;
 		var self     = this;
 		var settings = self.settings;
 		var options  = this.getSearchOptions();
@@ -1696,7 +1694,7 @@ $.extend(Selectize.prototype, {
 		var i, n, options, label, self = this;
 		opts = opts || {};
 
-		if (self.tagType === consts.TAG_SELECT) {
+		if (self.tagType === TAG_SELECT) {
 			options = [];
 			for (i = 0, n = self.items.length; i < n; i++) {
 				label = self.options[self.items[i]][self.settings.labelField] || '';
@@ -1835,7 +1833,7 @@ $.extend(Selectize.prototype, {
 		var i, n, direction, selection, values, caret, optionSelect, $optionSelect, $tail;
 		var self = this;
 
-		direction = (e && e.keyCode === consts.KEY_BACKSPACE) ? -1 : 1;
+		direction = (e && e.keyCode === KEY_BACKSPACE) ? -1 : 1;
 		selection = getSelection(self.$controlInput[0]);
 
 		if (self.$activeOption && !self.settings.hideSelected) {
@@ -2145,7 +2143,7 @@ $.extend(Selectize.prototype, {
 		if (!self.settings.create) return false;
 		var filter = self.settings.createFilter;
 		return input.length
-			&& (typeof filter !== 'function' || filter.apply(self, [input]))
+            && (typeof filter !== 'function' || filter.apply(self, [input]))
 			&& (typeof filter !== 'string' || new RegExp(filter).test(input))
 			&& (!(filter instanceof RegExp) || filter.test(input));
 	}

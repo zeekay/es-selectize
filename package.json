@@ -20,9 +20,8 @@
     "url": "git://github.com/selectize/selectize.js.git"
   },
   "dependencies": {
-    "es-sifter": "0.5.2",
-    "jquery": "^1.7.0",
-    "microplugin": "0.0.3"
+    "es-microplugin": "0.0.3",
+    "es-sifter": "0.5.2"
   },
   "devDependencies": {
     "chai": "^3.5.0",
