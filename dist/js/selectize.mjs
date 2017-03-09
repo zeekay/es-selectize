@@ -698,248 +698,6 @@ MicroPlugin.mixin = function(Interface) {
     };
 };
 
-Selectize$1.count = 0;
-Selectize$1.defaults = {
-	options: [],
-	optgroups: [],
-
-	plugins: [],
-	delimiter: ',',
-	splitOn: null, // regexp or string for splitting up values from a paste command
-	persist: true,
-	diacritics: true,
-	create: false,
-	createOnBlur: false,
-	createFilter: null,
-	highlight: true,
-	openOnFocus: true,
-	maxOptions: 1000,
-	maxItems: null,
-	hideSelected: null,
-	addPrecedence: false,
-	selectOnTab: false,
-	preload: false,
-	allowEmptyOption: false,
-	closeAfterSelect: false,
-
-	scrollDuration: 60,
-	loadThrottle: 300,
-	loadingClass: 'loading',
-
-	dataAttr: 'data-data',
-	optgroupField: 'optgroup',
-	valueField: 'value',
-	labelField: 'text',
-	optgroupLabelField: 'label',
-	optgroupValueField: 'value',
-	lockOptgroupOrder: false,
-
-	sortField: '$order',
-	searchField: ['text'],
-	searchConjunction: 'and',
-
-	mode: null,
-	wrapperClass: 'selectize-control',
-	inputClass: 'selectize-input',
-	dropdownClass: 'selectize-dropdown',
-	dropdownContentClass: 'selectize-dropdown-content',
-
-	dropdownParent: null,
-
-	copyClassesToDropdown: true,
-
-	/*
-	load                 : null, // function(query, callback) { ... }
-	score                : null, // function(search) { ... }
-	onInitialize         : null, // function() { ... }
-	onChange             : null, // function(value) { ... }
-	onItemAdd            : null, // function(value, $item) { ... }
-	onItemRemove         : null, // function(value) { ... }
-	onClear              : null, // function() { ... }
-	onOptionAdd          : null, // function(value, data) { ... }
-	onOptionRemove       : null, // function(value) { ... }
-	onOptionClear        : null, // function() { ... }
-	onOptionGroupAdd     : null, // function(id, data) { ... }
-	onOptionGroupRemove  : null, // function(id) { ... }
-	onOptionGroupClear   : null, // function() { ... }
-	onDropdownOpen       : null, // function($dropdown) { ... }
-	onDropdownClose      : null, // function($dropdown) { ... }
-	onType               : null, // function(str) { ... }
-	onDelete             : null, // function(values) { ... }
-	*/
-
-	render: {
-		/*
-		item: null,
-		optgroup: null,
-		optgroup_header: null,
-		option: null,
-		option_create: null
-		*/
-	}
-};
-
-$.fn.selectize = function(settings_user) {
-	var defaults             = $.fn.selectize.defaults;
-	var settings             = $.extend({}, defaults, settings_user);
-	var attr_data            = settings.dataAttr;
-	var field_label          = settings.labelField;
-	var field_value          = settings.valueField;
-	var field_optgroup       = settings.optgroupField;
-	var field_optgroup_label = settings.optgroupLabelField;
-	var field_optgroup_value = settings.optgroupValueField;
-
-	/**
-	 * Initializes selectize from a <input type="text"> element.
-	 *
-	 * @param {object} $input
-	 * @param {object} settings_element
-	 */
-	var init_textbox = function($input, settings_element) {
-		var i, n, values, option;
-
-		var data_raw = $input.attr(attr_data);
-
-		if (!data_raw) {
-			var value = $.trim($input.val() || '');
-			if (!settings.allowEmptyOption && !value.length) return;
-			values = value.split(settings.delimiter);
-			for (i = 0, n = values.length; i < n; i++) {
-				option = {};
-				option[field_label] = values[i];
-				option[field_value] = values[i];
-				settings_element.options.push(option);
-			}
-			settings_element.items = values;
-		} else {
-			settings_element.options = JSON.parse(data_raw);
-			for (i = 0, n = settings_element.options.length; i < n; i++) {
-				settings_element.items.push(settings_element.options[i][field_value]);
-			}
-		}
-	};
-
-	/**
-	 * Initializes selectize from a <select> element.
-	 *
-	 * @param {object} $input
-	 * @param {object} settings_element
-	 */
-	var init_select = function($input, settings_element) {
-		var i, n, tagName, $children, order = 0;
-		var options = settings_element.options;
-		var optionsMap = {};
-
-		var readData = function($el) {
-			var data = attr_data && $el.attr(attr_data);
-			if (typeof data === 'string' && data.length) {
-				return JSON.parse(data);
-			}
-			return null;
-		};
-
-		var addOption = function($option, group) {
-			$option = $($option);
-
-			var value = hash_key($option.val());
-			if (!value && !settings.allowEmptyOption) return;
-
-			// if the option already exists, it's probably been
-			// duplicated in another optgroup. in this case, push
-			// the current group to the "optgroup" property on the
-			// existing option so that it's rendered in both places.
-			if (optionsMap.hasOwnProperty(value)) {
-				if (group) {
-					var arr = optionsMap[value][field_optgroup];
-					if (!arr) {
-						optionsMap[value][field_optgroup] = group;
-					} else if (!$.isArray(arr)) {
-						optionsMap[value][field_optgroup] = [arr, group];
-					} else {
-						arr.push(group);
-					}
-				}
-				return;
-			}
-
-			var option             = readData($option) || {};
-			option[field_label]    = option[field_label] || $option.text();
-			option[field_value]    = option[field_value] || value;
-			option[field_optgroup] = option[field_optgroup] || group;
-
-			optionsMap[value] = option;
-			options.push(option);
-
-			if ($option.is(':selected')) {
-				settings_element.items.push(value);
-			}
-		};
-
-		var addGroup = function($optgroup) {
-			var i, n, id, optgroup, $options;
-
-			$optgroup = $($optgroup);
-			id = $optgroup.attr('label');
-
-			if (id) {
-				optgroup = readData($optgroup) || {};
-				optgroup[field_optgroup_label] = id;
-				optgroup[field_optgroup_value] = id;
-				settings_element.optgroups.push(optgroup);
-			}
-
-			$options = $('option', $optgroup);
-			for (i = 0, n = $options.length; i < n; i++) {
-				addOption($options[i], id);
-			}
-		};
-
-		settings_element.maxItems = $input.attr('multiple') ? null : 1;
-
-		$children = $input.children();
-		for (i = 0, n = $children.length; i < n; i++) {
-			tagName = $children[i].tagName.toLowerCase();
-			if (tagName === 'optgroup') {
-				addGroup($children[i]);
-			} else if (tagName === 'option') {
-				addOption($children[i]);
-			}
-		}
-	};
-
-	return this.each(function() {
-		if (this.selectize) return;
-
-		var instance;
-		var $input = $(this);
-		var tag_name = this.tagName.toLowerCase();
-		var placeholder = $input.attr('placeholder') || $input.attr('data-placeholder');
-		if (!placeholder && !settings.allowEmptyOption) {
-			placeholder = $input.children('option[value=""]').text();
-		}
-
-		var settings_element = {
-			'placeholder' : placeholder,
-			'options'     : [],
-			'optgroups'   : [],
-			'items'       : []
-		};
-
-		if (tag_name === 'select') {
-			init_select($input, settings_element);
-		} else {
-			init_textbox($input, settings_element);
-		}
-
-		instance = new Selectize($input, $.extend(true, {}, defaults, settings_element, settings_user));
-	});
-};
-
-$.fn.selectize.defaults = Selectize.defaults;
-$.fn.selectize.support = {
-	validity: SUPPORTS_VALIDITY_API
-};
-
 /**
  * MicroEvent - to make any js object an event emitter
  *
@@ -1043,6 +801,86 @@ $.fn.removeHighlight = function() {
 	}).end();
 };
 
+var defaults = {
+	options: [],
+	optgroups: [],
+
+	plugins: [],
+	delimiter: ',',
+	splitOn: null, // regexp or string for splitting up values from a paste command
+	persist: true,
+	diacritics: true,
+	create: false,
+	createOnBlur: false,
+	createFilter: null,
+	highlight: true,
+	openOnFocus: true,
+	maxOptions: 1000,
+	maxItems: null,
+	hideSelected: null,
+	addPrecedence: false,
+	selectOnTab: false,
+	preload: false,
+	allowEmptyOption: false,
+	closeAfterSelect: false,
+
+	scrollDuration: 60,
+	loadThrottle: 300,
+	loadingClass: 'loading',
+
+	dataAttr: 'data-data',
+	optgroupField: 'optgroup',
+	valueField: 'value',
+	labelField: 'text',
+	optgroupLabelField: 'label',
+	optgroupValueField: 'value',
+	lockOptgroupOrder: false,
+
+	sortField: '$order',
+	searchField: ['text'],
+	searchConjunction: 'and',
+
+	mode: null,
+	wrapperClass: 'selectize-control',
+	inputClass: 'selectize-input',
+	dropdownClass: 'selectize-dropdown',
+	dropdownContentClass: 'selectize-dropdown-content',
+
+	dropdownParent: null,
+
+	copyClassesToDropdown: true,
+
+	/*
+	load                 : null, // function(query, callback) { ... }
+	score                : null, // function(search) { ... }
+	onInitialize         : null, // function() { ... }
+	onChange             : null, // function(value) { ... }
+	onItemAdd            : null, // function(value, $item) { ... }
+	onItemRemove         : null, // function(value) { ... }
+	onClear              : null, // function() { ... }
+	onOptionAdd          : null, // function(value, data) { ... }
+	onOptionRemove       : null, // function(value) { ... }
+	onOptionClear        : null, // function() { ... }
+	onOptionGroupAdd     : null, // function(id, data) { ... }
+	onOptionGroupRemove  : null, // function(id) { ... }
+	onOptionGroupClear   : null, // function() { ... }
+	onDropdownOpen       : null, // function($dropdown) { ... }
+	onDropdownClose      : null, // function($dropdown) { ... }
+	onType               : null, // function(str) { ... }
+	onDelete             : null, // function(values) { ... }
+	*/
+
+	render: {
+		/*
+		item: null,
+		optgroup: null,
+		optgroup_header: null,
+		option: null,
+		option_create: null
+		*/
+	}
+};
+
 const IS_MAC        = /Mac/.test(navigator.userAgent);
 
 const KEY_A         = 65;
@@ -1066,7 +904,7 @@ const TAG_SELECT    = 1;
 const TAG_INPUT     = 2;
 
 // for now, android support in general is too spotty to support validity
-const SUPPORTS_VALIDITY_API$1 = !/android/i.test(window.navigator.userAgent) && !!document.createElement('input').validity;
+const SUPPORTS_VALIDITY_API = !/android/i.test(window.navigator.userAgent) && !!document.createElement('input').validity;
 
 /**
  * Determines if the provided value has been defined.
@@ -1367,7 +1205,170 @@ function domToString(d) {
 	return tmp.innerHTML;
 }
 
-function Selectize$1($input, settings) {
+var jquery = function(Selectize) {
+  $.fn.selectize = function(settingsUser) {
+      var defaults             = $.fn.selectize.defaults;
+      var settings             = $.extend({}, defaults, settingsUser);
+      var attrData            = settings.dataAttr;
+      var fieldLabel          = settings.labelField;
+      var fieldValue          = settings.valueField;
+      var fieldOptgroup       = settings.optgroupField;
+      var fieldOptgroupLabel = settings.optgroupLabelField;
+      var fieldOptgroupValue = settings.optgroupValueField;
+
+      /**
+       * Initializes selectize from a <input type="text"> element.
+       *
+       * @param {object} $input
+       * @param {object} settingsElement
+       */
+      var initTextbox = function($input, settingsElement) {
+          var i, n, values, option;
+
+          var dataRaw = $input.attr(attrData);
+
+          if (!dataRaw) {
+              var value = $.trim($input.val() || '');
+              if (!settings.allowEmptyOption && !value.length) return;
+              values = value.split(settings.delimiter);
+              for (i = 0, n = values.length; i < n; i++) {
+                  option = {};
+                  option[fieldLabel] = values[i];
+                  option[fieldValue] = values[i];
+                  settingsElement.options.push(option);
+              }
+              settingsElement.items = values;
+          } else {
+              settingsElement.options = JSON.parse(dataRaw);
+              for (i = 0, n = settingsElement.options.length; i < n; i++) {
+                  settingsElement.items.push(settingsElement.options[i][fieldValue]);
+              }
+          }
+      };
+
+      /**
+       * Initializes selectize from a <select> element.
+       *
+       * @param {object} $input
+       * @param {object} settingsElement
+       */
+      var initSelect = function($input, settingsElement) {
+          var i, n, tagName, $children;
+          var options = settingsElement.options;
+          var optionsMap = {};
+
+          var readData = function($el) {
+              var data = attrData && $el.attr(attrData);
+              if (typeof data === 'string' && data.length) {
+                  return JSON.parse(data);
+              }
+              return null;
+          };
+
+          var addOption = function($option, group) {
+              $option = $($option);
+
+              var value = hashKey($option.val());
+              if (!value && !settings.allowEmptyOption) return;
+
+              // if the option already exists, it's probably been
+              // duplicated in another optgroup. in this case, push
+              // the current group to the "optgroup" property on the
+              // existing option so that it's rendered in both places.
+              if (optionsMap.hasOwnProperty(value)) {
+                  if (group) {
+                      var arr = optionsMap[value][fieldOptgroup];
+                      if (!arr) {
+                          optionsMap[value][fieldOptgroup] = group;
+                      } else if (!$.isArray(arr)) {
+                          optionsMap[value][fieldOptgroup] = [arr, group];
+                      } else {
+                          arr.push(group);
+                      }
+                  }
+                  return;
+              }
+
+              var option             = readData($option) || {};
+              option[fieldLabel]    = option[fieldLabel] || $option.text();
+              option[fieldValue]    = option[fieldValue] || value;
+              option[fieldOptgroup] = option[fieldOptgroup] || group;
+
+              optionsMap[value] = option;
+              options.push(option);
+
+              if ($option.is(':selected')) {
+                  settingsElement.items.push(value);
+              }
+          };
+
+          var addGroup = function($optgroup) {
+              var i, n, id, optgroup, $options;
+
+              $optgroup = $($optgroup);
+              id = $optgroup.attr('label');
+
+              if (id) {
+                  optgroup = readData($optgroup) || {};
+                  optgroup[fieldOptgroupLabel] = id;
+                  optgroup[fieldOptgroupValue] = id;
+                  settingsElement.optgroups.push(optgroup);
+              }
+
+              $options = $('option', $optgroup);
+              for (i = 0, n = $options.length; i < n; i++) {
+                  addOption($options[i], id);
+              }
+          };
+
+          settingsElement.maxItems = $input.attr('multiple') ? null : 1;
+
+          $children = $input.children();
+          for (i = 0, n = $children.length; i < n; i++) {
+              tagName = $children[i].tagName.toLowerCase();
+              if (tagName === 'optgroup') {
+                  addGroup($children[i]);
+              } else if (tagName === 'option') {
+                  addOption($children[i]);
+              }
+          }
+      };
+
+      return this.each(function() {
+          if (this.selectize) return;
+
+          var instance;
+          var $input = $(this);
+          var tagName = this.tagName.toLowerCase();
+          var placeholder = $input.attr('placeholder') || $input.attr('data-placeholder');
+          if (!placeholder && !settings.allowEmptyOption) {
+              placeholder = $input.children('option[value=""]').text();
+          }
+
+          var settingsElement = {
+              'placeholder' : placeholder,
+              'options'     : [],
+              'optgroups'   : [],
+              'items'       : []
+          };
+
+          if (tagName === 'select') {
+              initSelect($input, settingsElement);
+          } else {
+              initTextbox($input, settingsElement);
+          }
+
+          instance = new Selectize($input, $.extend(true, {}, defaults, settingsElement, settingsUser));
+      });
+  };
+
+  $.fn.selectize.defaults = Selectize.defaults;
+  $.fn.selectize.support = {
+      validity: SUPPORTS_VALIDITY_API
+  };
+};
+
+function Selectize($input, settings) {
 	var i, n, dir, input, self = this;
 	input = $input[0];
 	input.selectize = self;
@@ -1386,7 +1387,7 @@ function Selectize$1($input, settings) {
 		tagType          : input.tagName.toLowerCase() === 'select' ? TAG_SELECT : TAG_INPUT,
 		rtl              : /rtl/i.test(dir),
 
-		eventNS          : '.selectize' + (++Selectize$1.count),
+		eventNS          : '.selectize' + (++Selectize.count),
 		highlightedValue : null,
 		isOpen           : false,
 		isDisabled       : false,
@@ -1451,16 +1452,25 @@ function Selectize$1($input, settings) {
 	self.setup();
 }
 
+
+// defaults
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Selectize.defaults = defaults;
+Selectize.count    = 0;
+
 // mixins
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-MicroEvent.mixin(Selectize$1);
-MicroPlugin.mixin(Selectize$1);
+MicroEvent.mixin(Selectize);
+MicroPlugin.mixin(Selectize);
+
+// jquery plugin
+jquery(Selectize);
 
 // methods
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-$.extend(Selectize$1.prototype, {
+$.extend(Selectize.prototype, {
 
 	/**
 	 * Creates all elements and sets up event bindings.
@@ -1611,7 +1621,7 @@ $.extend(Selectize$1.prototype, {
 		}
 
 		// feature detect for the validation API
-		if (SUPPORTS_VALIDITY_API$1) {
+		if (SUPPORTS_VALIDITY_API) {
 			$input.on('invalid' + eventNS, function(e) {
 				e.preventDefault();
 				self.isInvalid = true;
@@ -3500,5 +3510,5 @@ $.extend(Selectize$1.prototype, {
 
 });
 
-export default Selectize$1;
+export default Selectize;
 //# sourceMappingURL=selectize.mjs.map

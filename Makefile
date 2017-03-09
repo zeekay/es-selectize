@@ -11,7 +11,7 @@ all: compile
 test:
 	npm test
 compile:
-	$(HANDROLL) src/index.js --format web --dest dist/js/selectize.js
+	$(HANDROLL) src/index.js --format web --dest dist/js/selectize.js --module-name Selectize
 	$(HANDROLL) src/index.js --format es --dest dist/js/selectize.mjs
 	cp dist/js/selectize.js ./selectize.js
 	$(UGLIFYJS) --mangle -b beautify=false,ascii-only=true --output $(OUT_MIN) $(OUT)

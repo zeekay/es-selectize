@@ -14,6 +14,9 @@
   "module": "dist/js/selectize.mjs",
   "js:next": "dist/js/selectize.mjs",
   "description": "Selectize is a jQuery-based custom <select> UI control. Useful for tagging, contact lists, country selectors, etc.",
+  "files": [
+    "dist/"
+  ],
   "version": "0.12.4",
   "author": "Brian Reavis <brian@thirdroute.com>",
   "license": "Apache-2.0",
@@ -38,7 +41,7 @@
     "grunt-contrib-uglify": "^2.0.0",
     "grunt-contrib-watch": "1.x",
     "grunt-replace": "^1.0.1",
-    "handroll": "0.3.7",
+    "handroll": "0.4.2",
     "karma": "^1.3.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.0.0",
