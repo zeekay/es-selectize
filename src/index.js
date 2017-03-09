@@ -3,7 +3,7 @@ import defaults  from './defaults'
 import {hashKey} from './utils';
 
 
-export default function selectize(optsUser) {
+export default function selectize($select, optsUser) {
     var opts               = $.extend({}, defaults, optsUser);
     var attrData           = opts.dataAttr;
     var fieldLabel         = opts.labelField;
@@ -130,7 +130,7 @@ export default function selectize(optsUser) {
         }
     };
 
-    return this.each(function() {
+    return $select.each(function() {
         if (this.selectize) return;
 
         var instance;
