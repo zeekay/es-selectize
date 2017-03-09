@@ -4,7 +4,6 @@ import MicroPlugin from 'es-microplugin'
 import MicroEvent from './contrib/microevent'
 import highlight  from './contrib/highlight'
 import defaults   from './defaults'
-import jquery     from './jquery'
 
 import {
     IS_MAC,
@@ -117,9 +116,6 @@ Selectize.count    = 0
 
 MicroEvent.mixin(Selectize);
 MicroPlugin.mixin(Selectize);
-
-// jquery plugin
-jquery(Selectize)
 
 // methods
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
