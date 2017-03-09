@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "handroll": "0.4.2",
+    "handroll": "0.4.4",
     "karma": "^1.3.0",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.0.0",

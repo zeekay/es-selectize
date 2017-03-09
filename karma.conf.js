@@ -64,19 +64,10 @@ module.exports = function(config) {
   config.set({
     frameworks: ['mocha', 'chai'],
     files: [
-			'dist/css/selectize.default.css',
-			'node_modules/jquery/dist/jquery.js',
-			'node_modules/microplugin/src/microplugin.js',
-			'node_modules/sifter/sifter.js',
-			'test/support/*.js',
-			'src/contrib/*.js',
-			'src/constants.js',
-			'src/utils.js',
-			'src/selectize.js',
-			'src/defaults.js',
-			'src/selectize.jquery.js',
-			'test/*.js'
-		],
+      'dist/css/selectize.default.css',
+      'src/index.js',
+      'test/*.js',
+	],
     preprocessors: {
       'src/*.js': ['handroll']
       // 'src/*.js': ['coverage']
