@@ -1,7 +1,4 @@
-import Selectize from './selectize'
-
-Selectize.count = 0;
-Selectize.defaults = {
+export default {
 	options: [],
 	optgroups: [],
 
@@ -79,4 +76,4 @@ Selectize.defaults = {
 		option_create: null
 		*/
 	}
-};
+}

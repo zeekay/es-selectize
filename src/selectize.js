@@ -1,11 +1,10 @@
 import Sifter      from 'es-sifter'
 import MicroPlugin from 'es-microplugin'
 
-import './defaults'
-import './selectize.jquery.js'
-
 import MicroEvent from './contrib/microevent'
 import highlight  from './contrib/highlight'
+import defaults   from './defaults'
+import jquery     from './jquery'
 
 import {
     IS_MAC,
@@ -107,11 +106,20 @@ export default function Selectize($input, settings) {
 	self.setup();
 }
 
+
+// defaults
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Selectize.defaults = defaults
+Selectize.count    = 0
+
 // mixins
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 MicroEvent.mixin(Selectize);
 MicroPlugin.mixin(Selectize);
+
+// jquery plugin
+jquery(Selectize)
 
 // methods
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
