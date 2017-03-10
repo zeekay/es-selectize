@@ -64,6 +64,7 @@ module.exports = function(config) {
   config.set({
     frameworks: ['mocha', 'chai'],
     files: [
+      'node_modules/jquery/dist/jquery.min.js',
       'dist/css/selectize.default.css',
       'src/index.js',
       'test/*.js',
