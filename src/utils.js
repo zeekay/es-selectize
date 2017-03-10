@@ -56,7 +56,7 @@ export function escapeReplace(str) {
 	return (str + '').replace(/\$/g, '$$$$');
 }
 
-export const hook = {};
+export var hook = {};
 
 /**
  * Wraps `method` on `self` so that `fn`
